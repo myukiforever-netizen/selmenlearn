@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String    @id @default(cuid())
+  clerkId     String    @unique
+  email       String    @unique
+  name        String?
+  xp          Int       @default(0)
+  level       Int       @default(1)
+  streak      Int       @default(0)
+  lastStudy   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  decks        Deck[]
+  cardReviews  CardReview[]
+  sessions     Session[]
+  achievements Achievement[]
+
+  @@index([clerkId])
+}
+
+model Deck {
+  id                 String   @id @default(cuid())
+  userId             String
+  title              String
+  description        String?
+  subject            String?
+  sourceType         String   @default("manual")
+  isPublic           Boolean  @default(false)
+  // idle | processing | done | error
+  generationStatus   String   @default("idle")
+  generationProgress Int      @default(0)
+  generationError    String?
+  generationOptions  String?  // JSON : GenerationOptions (cardCount, difficulty, cardTypePreference)
+  sourceContent      String?  // Texte extrait brut (pour régénération)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cards    Card[]
+  sessions Session[]
+
+  @@index([userId])
+  @@index([isPublic])
+  @@index([generationStatus])
+}
+
+model Card {
+  id       String @id @default(cuid())
+  deckId   String
+  front    String
+  back     String
+  cardType String @default("definition")
+
+  deck    Deck            @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  reviews CardReview[]
+  answers SessionAnswer[]
+
+  @@index([deckId])
+}
+
+model CardReview {
+  id           String    @id @default(cuid())
+  userId       String
+  cardId       String
+  easeFactor   Float     @default(2.5)
+  interval     Int       @default(1)
+  repetitions  Int       @default(0)
+  nextReview   DateTime  @default(now())
+  lastReviewed DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, cardId])
+  @@index([userId, nextReview])
+}
+
+model Session {
+  id           String    @id @default(cuid())
+  userId       String
+  deckId       String
+  mode         String    @default("sprint")
+  startedAt    DateTime  @default(now())
+  endedAt      DateTime?
+  xpGained     Int       @default(0)
+  cardsStudied Int       @default(0)
+
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deck    Deck            @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  answers SessionAnswer[]
+
+  @@index([userId])
+  @@index([deckId])
+}
+
+model SessionAnswer {
+  id          String   @id @default(cuid())
+  sessionId   String
+  cardId      String
+  rating      Int
+  isCorrect   Boolean
+  timeMs      Int
+  answeredAt  DateTime @default(now())
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  card    Card    @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  userId      String
+  badgeId     String
+  unlockedAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+}

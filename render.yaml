@@ -1,0 +1,46 @@
+# Render Blueprint — SelmenLearn
+# Un seul fichier pour déployer backend + PostgreSQL + Redis en un clic.
+# Doc : https://render.com/docs/blueprint-spec
+
+services:
+  # ── Backend API (Hono.js / Node.js) ─────────────────────────────────────────
+  - type: web
+    name: selmenlearn-api
+    runtime: docker
+    rootDir: selmenlearn-api
+    dockerfilePath: ./Dockerfile
+    region: frankfurt
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: selmenlearn-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: selmenlearn-redis
+          property: connectionString
+      # À renseigner manuellement dans le dashboard Render après déploiement :
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: FRONTEND_URL
+        sync: false   # ex : https://selmenlearn.vercel.app
+
+  # ── Redis (cache + scheduling SM-2) ─────────────────────────────────────────
+  - type: redis
+    name: selmenlearn-redis
+    region: frankfurt
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+
+# ── PostgreSQL ────────────────────────────────────────────────────────────────
+databases:
+  - name: selmenlearn-db
+    region: frankfurt
+    plan: free
