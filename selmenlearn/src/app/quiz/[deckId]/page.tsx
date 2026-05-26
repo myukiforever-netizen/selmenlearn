@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, HelpCircle, AlertCircle } from "lucide-react";
@@ -8,6 +8,7 @@ import Link from "next/link";
 import { QuizQuestion } from "@/components/quiz/QuizQuestion";
 import { QuizProgress } from "@/components/quiz/QuizProgress";
 import { QuizComplete } from "@/components/quiz/QuizComplete";
+import { LevelUpOverlay } from "@/components/xp/LevelUpOverlay";
 import { useQuizSession } from "@/hooks/useQuizSession";
 
 // ─── Page principale ──────────────────────────────────────────────────────────
@@ -27,10 +28,21 @@ export default function QuizPage() {
     xpGained,
     streak,
     errorMsg,
+    leveledUp,
+    newLevel,
     selectAnswer,
     nextQuestion,
     restart,
   } = useQuizSession(deckId);
+
+  const [showLevelUp, setShowLevelUp] = useState(false);
+
+  // Déclencher l'overlay level-up quand le quiz est terminé avec un passage de niveau
+  useEffect(() => {
+    if (status === "complete" && leveledUp) {
+      setShowLevelUp(true);
+    }
+  }, [status, leveledUp]);
 
   // Raccourci clavier : Entrée pour passer à la question suivante
   useEffect(() => {
@@ -102,14 +114,22 @@ export default function QuizPage() {
 
   if (status === "complete") {
     return (
-      <QuizComplete
-        deckId={deckId}
-        score={score}
-        total={totalQuestions}
-        xpGained={xpGained}
-        streak={streak}
-        onRestart={restart}
-      />
+      <>
+        <QuizComplete
+          deckId={deckId}
+          score={score}
+          total={totalQuestions}
+          xpGained={xpGained}
+          streak={streak}
+          onRestart={restart}
+        />
+        {showLevelUp && (
+          <LevelUpOverlay
+            newLevel={newLevel}
+            onDismiss={() => setShowLevelUp(false)}
+          />
+        )}
+      </>
     );
   }
 

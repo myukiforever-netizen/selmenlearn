@@ -4,10 +4,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, X } from "lucide-react";
 
 interface FeedbackOverlayProps {
-  feedback: "correct" | "incorrect" | null;
+  feedback:  "correct" | "incorrect" | null;
+  xpGained?: number;
 }
 
-export function FeedbackOverlay({ feedback }: FeedbackOverlayProps) {
+export function FeedbackOverlay({ feedback, xpGained }: FeedbackOverlayProps) {
+  const showXp = feedback === "correct" && xpGained && xpGained > 0;
+
   return (
     <AnimatePresence>
       {feedback && (
@@ -23,6 +26,7 @@ export function FeedbackOverlay({ feedback }: FeedbackOverlayProps) {
               : "bg-rose-500/8"
           }`}
         >
+          {/* ── Icône correcte/incorrecte ── */}
           <motion.div
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -40,6 +44,21 @@ export function FeedbackOverlay({ feedback }: FeedbackOverlayProps) {
               <X className="w-12 h-12 text-white" strokeWidth={3} />
             )}
           </motion.div>
+
+          {/* ── Badge +XP flottant ── */}
+          {showXp && (
+            <motion.div
+              initial={{ opacity: 0, y: 0, scale: 0.8 }}
+              animate={{ opacity: [0, 1, 1, 0], y: -80, scale: 1 }}
+              transition={{ duration: 0.9, ease: "easeOut" }}
+              className="absolute top-1/2 left-1/2 -translate-x-1/2
+                         bg-emerald-500 text-white font-bold text-base
+                         px-4 py-1.5 rounded-full shadow-lg shadow-emerald-500/30
+                         whitespace-nowrap"
+            >
+              +{xpGained} XP
+            </motion.div>
+          )}
         </motion.div>
       )}
     </AnimatePresence>

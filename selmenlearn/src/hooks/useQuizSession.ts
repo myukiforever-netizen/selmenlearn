@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useApiClient } from "@/hooks/useApiClient";
+import { useUserStore } from "@/stores/useUserStore";
 import type { QuizQuestion, QuizSessionResult, QuizSubmitResponse } from "@/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -19,6 +20,8 @@ interface QuizState {
   streak:      number;
   quizStartMs: number;
   errorMsg:    string | null;
+  leveledUp:   boolean;
+  newLevel:    number;
 }
 
 const INITIAL: QuizState = {
@@ -32,6 +35,8 @@ const INITIAL: QuizState = {
   streak:      0,
   quizStartMs: 0,
   errorMsg:    null,
+  leveledUp:   false,
+  newLevel:    1,
 };
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -40,6 +45,8 @@ export function useQuizSession(deckId: string) {
   const api    = useApiClient();
   const apiRef = useRef(api);
   apiRef.current = api;
+
+  const { addXP, setLevel } = useUserStore();
 
   const [state, setState] = useState<QuizState>(INITIAL);
 
@@ -80,9 +87,9 @@ export function useQuizSession(deckId: string) {
   // ── Sélectionner une réponse ──────────────────────────────────────────────────
   const selectAnswer = useCallback((optionIdx: number) => {
     setState((s) => {
-      if (s.isAnswered) return s; // déjà répondu
+      if (s.isAnswered) return s;
 
-      const question  = s.questions[s.currentIdx];
+      const question = s.questions[s.currentIdx];
       if (!question)  return s;
 
       const isCorrect = question.options[optionIdx]?.isCorrect ?? false;
@@ -113,7 +120,6 @@ export function useQuizSession(deckId: string) {
         };
       }
 
-      // Dernière question → passer en complete (l'effet ci-dessous appellera submit)
       return { ...s, status: "complete" as QuizStatus };
     });
   }, []);
@@ -132,7 +138,18 @@ export function useQuizSession(deckId: string) {
         timeMs: totalMs,
       })
       .then((res) => {
-        setState((s) => ({ ...s, xpGained: res.xpGained, streak: res.streak }));
+        // Sync Zustand store so QuizComplete XP bar is up-to-date
+        if (res.xpGained > 0) {
+          addXP(res.xpGained);
+          setLevel(res.level);
+        }
+        setState((s) => ({
+          ...s,
+          xpGained:  res.xpGained,
+          streak:    res.streak,
+          leveledUp: res.leveledUp,
+          newLevel:  res.level,
+        }));
       })
       .catch(() => {});
   }, [state.status]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -181,6 +198,8 @@ export function useQuizSession(deckId: string) {
     xpGained:        state.xpGained,
     streak:          state.streak,
     errorMsg:        state.errorMsg,
+    leveledUp:       state.leveledUp,
+    newLevel:        state.newLevel,
     selectAnswer,
     nextQuestion,
     restart,

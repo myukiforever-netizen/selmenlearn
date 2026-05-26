@@ -121,6 +121,7 @@ cards.post(
     // Update XP + recalculate level
     let newStreak = 0;
     let newLevel  = 1;
+    let prevLevel = 1;
 
     if (xpGained > 0) {
       const updatedUser = await prisma.user.update({
@@ -128,8 +129,8 @@ cards.post(
         data:  { xp: { increment: xpGained } },
         select: { xp: true, level: true },
       });
-      newLevel = xpToLevel(updatedUser.xp);
-      // Persist level if it changed
+      prevLevel = updatedUser.level; // level stored before recompute
+      newLevel  = xpToLevel(updatedUser.xp);
       if (newLevel !== updatedUser.level) {
         await prisma.user.update({
           where: { id: userId },
@@ -138,10 +139,11 @@ cards.post(
       }
     } else {
       const user = await prisma.user.findUnique({
-        where: { id: userId },
+        where:  { id: userId },
         select: { level: true },
       });
-      newLevel = user?.level ?? 1;
+      prevLevel = user?.level ?? 1;
+      newLevel  = prevLevel;
     }
 
     // Update streak
@@ -159,6 +161,8 @@ cards.post(
       xpGained,
       streak:     newStreak,
       level:      newLevel,
+      prevLevel,
+      leveledUp:  newLevel > prevLevel,
     });
   }
 );

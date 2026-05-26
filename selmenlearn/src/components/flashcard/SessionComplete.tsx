@@ -1,9 +1,31 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Trophy, Zap, Flame, RotateCcw, LayoutDashboard } from "lucide-react";
+import { Trophy, Zap, Flame, RotateCcw, LayoutDashboard, Star } from "lucide-react";
 import Link from "next/link";
+import { useUserStore } from "@/stores/useUserStore";
+import { XpCountUp } from "@/components/xp/XpCountUp";
 import type { RatingDistribution } from "@/types";
+
+// ─── Niveau titles ────────────────────────────────────────────────────────────
+
+const LEVEL_TITLES: Record<number, string> = {
+  1:  "Explorateur",  2:  "Explorateur",  3:  "Explorateur",
+  4:  "Explorateur",  5:  "Explorateur",
+  6:  "Apprenti",     7:  "Apprenti",     8:  "Apprenti",
+  9:  "Apprenti",     10: "Apprenti",
+  11: "Érudit",       12: "Érudit",       13: "Érudit",
+  14: "Érudit",       15: "Érudit",
+  16: "Expert",       17: "Expert",       18: "Expert",
+  19: "Expert",       20: "Maître",
+};
+
+const XP_THRESHOLDS = [
+  0, 100, 250, 500, 1_000, 2_500, 4_000, 6_000, 8_000, 10_000,
+  15_000, 20_000, 27_500, 35_000, 45_000, 60_000, 75_000, 100_000, 150_000, 200_000,
+];
+
+// ─── Props ────────────────────────────────────────────────────────────────────
 
 interface SessionCompleteProps {
   deckId:              string;
@@ -13,6 +35,8 @@ interface SessionCompleteProps {
   ratingDistribution:  RatingDistribution;
   onRestart:           () => void;
 }
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export function SessionComplete({
   deckId,
@@ -24,12 +48,22 @@ export function SessionComplete({
 }: SessionCompleteProps) {
   const againCount = ratingDistribution.again;
 
+  // Read current state from Zustand (updated by useStudySession after each review)
+  const level = useUserStore((s) => s.level);
+  const totalXp = useUserStore((s) => s.xp);
+
+  const title        = LEVEL_TITLES[level] ?? "Maître";
+  const levelStart   = XP_THRESHOLDS[level - 1] ?? 0;
+  const levelEnd     = XP_THRESHOLDS[level]      ?? null;
+  const progressPct  = levelEnd !== null
+    ? Math.min(100, Math.round(((totalXp - levelStart) / (levelEnd - levelStart)) * 100))
+    : 100;
+
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center px-6 py-12 gap-8 overflow-hidden bg-slate-50 dark:bg-slate-950">
-      {/* Confetti */}
       <ConfettiParticles />
 
-      {/* Trophy */}
+      {/* ── Trophy ── */}
       <motion.div
         initial={{ scale: 0, rotate: -15 }}
         animate={{ scale: 1, rotate: 0 }}
@@ -40,7 +74,7 @@ export function SessionComplete({
         <Trophy className="w-12 h-12 text-white" />
       </motion.div>
 
-      {/* Title */}
+      {/* ── Titre ── */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -55,7 +89,7 @@ export function SessionComplete({
         </p>
       </motion.div>
 
-      {/* Stats cards */}
+      {/* ── Stats XP + Streak ── */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -64,7 +98,9 @@ export function SessionComplete({
       >
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 text-center">
           <Zap className="w-5 h-5 text-amber-500 mx-auto mb-1.5" />
-          <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">+{xpGained}</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">
+            <XpCountUp target={xpGained} prefix="+" />
+          </p>
           <p className="text-xs text-slate-400 mt-0.5">XP gagnés</p>
         </div>
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 text-center">
@@ -74,7 +110,37 @@ export function SessionComplete({
         </div>
       </motion.div>
 
-      {/* Rating distribution */}
+      {/* ── Barre progression XP ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.48 }}
+        className="w-full max-w-xs bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4"
+      >
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-6 h-6 rounded-md bg-brand-100 dark:bg-brand-950/50 flex items-center justify-center">
+            <Star className="w-3.5 h-3.5 text-brand-500" />
+          </div>
+          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+            Niveau {level} — {title}
+          </span>
+        </div>
+        <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-brand-500 rounded-full"
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: progressPct / 100 }}
+            style={{ transformOrigin: "left" }}
+            transition={{ duration: 0.8, ease: "easeOut", delay: 0.55 }}
+          />
+        </div>
+        <p className="text-[10px] text-slate-400 mt-1.5">
+          {totalXp.toLocaleString()} XP
+          {levelEnd !== null && ` / ${levelEnd.toLocaleString()} XP`}
+        </p>
+      </motion.div>
+
+      {/* ── Distribution notes ── */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -87,7 +153,7 @@ export function SessionComplete({
         <RatingBar label="À revoir"  count={ratingDistribution.again} total={totalCards} color="bg-rose-400"    delay={0.8}  />
       </motion.div>
 
-      {/* Action buttons */}
+      {/* ── Actions ── */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -160,21 +226,16 @@ function ConfettiParticles() {
         <motion.div
           key={i}
           className={`absolute w-2.5 h-2.5 ${COLORS[i % COLORS.length]} ${SHAPES[i % 2]}`}
-          initial={{
-            left: `${(i * 37) % 100}%`,
-            top: -20,
-            rotate: 0,
-            opacity: 1,
-          }}
+          initial={{ left: `${(i * 37) % 100}%`, top: -20, rotate: 0, opacity: 1 }}
           animate={{
-            top: "110vh",
-            rotate: (i % 2 === 0 ? 1 : -1) * (180 + (i * 47) % 360),
+            top:     "110vh",
+            rotate:  (i % 2 === 0 ? 1 : -1) * (180 + (i * 47) % 360),
             opacity: [1, 1, 1, 0],
           }}
           transition={{
             duration: 2.2 + (i % 5) * 0.4,
-            delay: (i % 7) * 0.15,
-            ease: "easeIn",
+            delay:    (i % 7) * 0.15,
+            ease:     "easeIn",
           }}
         />
       ))}

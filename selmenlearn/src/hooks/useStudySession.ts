@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useApiClient } from "@/hooks/useApiClient";
+import { useUserStore } from "@/stores/useUserStore";
 import type { DueCard, ReviewResponse, RatingDistribution } from "@/types";
 
 // ─── Types internes ───────────────────────────────────────────────────────────
@@ -15,39 +16,47 @@ interface SessionResult {
 }
 
 interface StudySessionState {
-  status:     SessionStatus;
-  cards:      DueCard[];
-  currentIdx: number;
-  flipped:    boolean;
-  feedback:   "correct" | "incorrect" | null;
-  shake:      boolean;
-  sessionId:  string | null;
-  results:    SessionResult[];
-  totalXp:    number;
-  streak:     number;
-  isRating:   boolean;
+  status:      SessionStatus;
+  cards:       DueCard[];
+  currentIdx:  number;
+  flipped:     boolean;
+  feedback:    "correct" | "incorrect" | null;
+  shake:       boolean;
+  sessionId:   string | null;
+  results:     SessionResult[];
+  totalXp:     number;
+  streak:      number;
+  isRating:    boolean;
+  lastXpGained: number;
+  leveledUp:   boolean;
+  newLevel:    number;
 }
 
 const INITIAL: StudySessionState = {
-  status:     "loading",
-  cards:      [],
-  currentIdx: 0,
-  flipped:    false,
-  feedback:   null,
-  shake:      false,
-  sessionId:  null,
-  results:    [],
-  totalXp:    0,
-  streak:     0,
-  isRating:   false,
+  status:       "loading",
+  cards:        [],
+  currentIdx:   0,
+  flipped:      false,
+  feedback:     null,
+  shake:        false,
+  sessionId:    null,
+  results:      [],
+  totalXp:      0,
+  streak:       0,
+  isRating:     false,
+  lastXpGained: 0,
+  leveledUp:    false,
+  newLevel:     1,
 };
 
 // ─── Hook principal ───────────────────────────────────────────────────────────
 
 export function useStudySession(deckId: string) {
-  const api = useApiClient();
+  const api    = useApiClient();
   const apiRef = useRef(api);
-  apiRef.current = api; // Always use the latest api reference
+  apiRef.current = api;
+
+  const { addXP, setLevel } = useUserStore();
 
   const [state, setState] = useState<StudySessionState>(INITIAL);
   const cardStartTime = useRef(Date.now());
@@ -75,12 +84,11 @@ export function useStudySession(deckId: string) {
         cardStartTime.current = Date.now();
         setState((s) => ({
           ...s,
-          status: "active",
-          cards: dueCards,
+          status:    "active",
+          cards:     dueCards,
           sessionId: session.id,
         }));
       } catch {
-        // En cas d'erreur réseau/auth → état vide (le deck reste accessible)
         setState((s) => ({ ...s, status: "empty" }));
       }
     }
@@ -103,19 +111,20 @@ export function useStudySession(deckId: string) {
       const currentCard = state.cards[state.currentIdx];
       if (!currentCard) return;
 
-      const timeMs = Date.now() - cardStartTime.current;
+      const timeMs    = Date.now() - cardStartTime.current;
       const isCorrect = rating >= 2;
 
-      // Afficher le feedback visuel + shake sur "À revoir"
       setState((s) => ({
         ...s,
         feedback: isCorrect ? "correct" : "incorrect",
         shake:    !isCorrect,
       }));
 
-      // Appel API de review (non-bloquant pour l'UX)
-      let xpGained = 0;
+      let xpGained  = 0;
       let newStreak = state.streak;
+      let newLevel  = state.newLevel;
+      let didLevelUp = false;
+
       try {
         const result = await apiRef.current.post<ReviewResponse>(
           `/cards/${currentCard.id}/review`,
@@ -123,48 +132,60 @@ export function useStudySession(deckId: string) {
         );
         xpGained  = result.xpGained;
         newStreak = result.streak;
+        newLevel  = result.level;
+        didLevelUp = result.leveledUp;
+
+        // Sync Zustand store immediately so SessionComplete XP bar is accurate
+        if (xpGained > 0) {
+          addXP(xpGained);
+          setLevel(newLevel);
+        }
       } catch {
-        // Continuer même si la review échoue côté réseau
+        // Continue even if review fails
       }
 
-      // Attendre la fin de l'animation de feedback (600ms)
       await new Promise<void>((resolve) => setTimeout(resolve, 600));
 
-      // Déterminer si c'est la dernière carte
       const isLastCard = state.currentIdx + 1 >= state.cards.length;
 
       if (isLastCard) {
-        // Clôturer la session backend
         if (state.sessionId) {
           apiRef.current.patch(`/sessions/${state.sessionId}/end`, {}).catch(() => {});
         }
         setState((s) => ({
           ...s,
-          feedback:  null,
-          shake:     false,
-          isRating:  false,
-          results:   [...s.results, { cardId: currentCard.id, rating, xpGained }],
-          totalXp:   s.totalXp + xpGained,
-          streak:    newStreak,
-          status:    "complete",
+          feedback:     null,
+          shake:        false,
+          isRating:     false,
+          lastXpGained: xpGained,
+          results:      [...s.results, { cardId: currentCard.id, rating, xpGained }],
+          totalXp:      s.totalXp + xpGained,
+          streak:       newStreak,
+          // Sticky: once leveled-up during session, keep the flag
+          leveledUp:    s.leveledUp || didLevelUp,
+          newLevel:     didLevelUp ? newLevel : s.newLevel,
+          status:       "complete",
         }));
       } else {
         cardStartTime.current = Date.now();
         setState((s) => ({
           ...s,
-          feedback:   null,
-          shake:      false,
-          isRating:   false,
-          flipped:    false,
-          currentIdx: s.currentIdx + 1,
-          results:    [...s.results, { cardId: currentCard.id, rating, xpGained }],
-          totalXp:    s.totalXp + xpGained,
-          streak:     newStreak,
+          feedback:     null,
+          shake:        false,
+          isRating:     false,
+          flipped:      false,
+          currentIdx:   s.currentIdx + 1,
+          lastXpGained: xpGained,
+          results:      [...s.results, { cardId: currentCard.id, rating, xpGained }],
+          totalXp:      s.totalXp + xpGained,
+          streak:       newStreak,
+          leveledUp:    s.leveledUp || didLevelUp,
+          newLevel:     didLevelUp ? newLevel : s.newLevel,
         }));
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [state.cards, state.currentIdx, state.sessionId, state.streak, state.isRating]
+    [state.cards, state.currentIdx, state.sessionId, state.streak, state.isRating, state.leveledUp, state.newLevel, addXP, setLevel]
   );
 
   // ── Recommencer avec les cartes "À revoir" ───────────────────────────────────
@@ -180,15 +201,16 @@ export function useStudySession(deckId: string) {
       cardStartTime.current = Date.now();
       return {
         ...s,
-        cards:      againCards,
-        currentIdx: 0,
-        flipped:    false,
-        feedback:   null,
-        shake:      false,
-        results:    [],
-        isRating:   false,
-        status:     "active",
-        // sessionId reste null pour la relance (pas de nouvelle session backend)
+        cards:        againCards,
+        currentIdx:   0,
+        flipped:      false,
+        feedback:     null,
+        shake:        false,
+        results:      [],
+        isRating:     false,
+        leveledUp:    false,
+        lastXpGained: 0,
+        status:       "active",
       };
     });
   }, []);
@@ -202,16 +224,19 @@ export function useStudySession(deckId: string) {
   };
 
   return {
-    status:      state.status,
-    currentCard: state.cards[state.currentIdx] ?? null,
-    currentIdx:  state.currentIdx,
-    totalCards:  state.cards.length,
-    flipped:     state.flipped,
-    feedback:    state.feedback,
-    shake:       state.shake,
-    totalXp:     state.totalXp,
-    streak:      state.streak,
-    isRating:    state.isRating,
+    status:          state.status,
+    currentCard:     state.cards[state.currentIdx] ?? null,
+    currentIdx:      state.currentIdx,
+    totalCards:      state.cards.length,
+    flipped:         state.flipped,
+    feedback:        state.feedback,
+    shake:           state.shake,
+    totalXp:         state.totalXp,
+    streak:          state.streak,
+    isRating:        state.isRating,
+    lastXpGained:    state.lastXpGained,
+    leveledUp:       state.leveledUp,
+    newLevel:        state.newLevel,
     ratingDistribution,
     flip,
     rate,

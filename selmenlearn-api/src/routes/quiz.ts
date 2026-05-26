@@ -85,25 +85,28 @@ quiz.post(
     });
 
     // Attribuer les XP et recalculer le niveau
-    let newLevel = 1;
+    let newLevel  = 1;
+    let prevLevel = 1;
     if (xpGained > 0) {
       const updated = await prisma.user.update({
         where:  { id: userId },
         data:   { xp: { increment: xpGained } },
         select: { xp: true, level: true },
       });
-      newLevel = xpToLevel(updated.xp);
+      prevLevel = updated.level; // level before recompute
+      newLevel  = xpToLevel(updated.xp);
       if (newLevel !== updated.level) {
         await prisma.user.update({ where: { id: userId }, data: { level: newLevel } });
       }
     } else {
       const user = await prisma.user.findUnique({ where: { id: userId }, select: { level: true } });
-      newLevel = user?.level ?? 1;
+      prevLevel = user?.level ?? 1;
+      newLevel  = prevLevel;
     }
 
     const newStreak = await updateStreak(userId);
 
-    return c.json({ xpGained, streak: newStreak, level: newLevel });
+    return c.json({ xpGained, streak: newStreak, level: newLevel, prevLevel, leveledUp: newLevel > prevLevel });
   }
 );
 

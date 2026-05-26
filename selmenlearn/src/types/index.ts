@@ -100,6 +100,9 @@ export interface ReviewResponse {
   interval:   number;
   xpGained:   number;
   streak:     number;
+  level:      number;
+  prevLevel:  number;
+  leveledUp:  boolean;
 }
 
 export interface RatingDistribution {
@@ -155,7 +158,9 @@ export interface QuizSessionResult {
 }
 
 export interface QuizSubmitResponse {
-  xpGained: number;
-  streak:   number;
-  level:    number;
+  xpGained:  number;
+  streak:    number;
+  level:     number;
+  prevLevel: number;
+  leveledUp: boolean;
 }

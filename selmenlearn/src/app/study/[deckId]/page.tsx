@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, BookOpen } from "lucide-react";
@@ -10,6 +10,7 @@ import { RatingButtons } from "@/components/flashcard/RatingButtons";
 import { SessionProgress } from "@/components/flashcard/SessionProgress";
 import { FeedbackOverlay } from "@/components/flashcard/FeedbackOverlay";
 import { SessionComplete } from "@/components/flashcard/SessionComplete";
+import { LevelUpOverlay } from "@/components/xp/LevelUpOverlay";
 import { useStudySession } from "@/hooks/useStudySession";
 
 // ─── Page de session ──────────────────────────────────────────────────────────
@@ -30,10 +31,22 @@ export default function StudyPage() {
     streak,
     ratingDistribution,
     isRating,
+    lastXpGained,
+    leveledUp,
+    newLevel,
     flip,
     rate,
     restart,
   } = useStudySession(deckId);
+
+  const [showLevelUp, setShowLevelUp] = useState(false);
+
+  // Déclencher l'overlay level-up quand la session se termine avec un passage de niveau
+  useEffect(() => {
+    if (status === "complete" && leveledUp) {
+      setShowLevelUp(true);
+    }
+  }, [status, leveledUp]);
 
   // ── Raccourcis clavier ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -88,14 +101,22 @@ export default function StudyPage() {
 
   if (status === "complete") {
     return (
-      <SessionComplete
-        deckId={deckId}
-        totalCards={totalCards}
-        xpGained={totalXp}
-        streak={streak}
-        ratingDistribution={ratingDistribution}
-        onRestart={restart}
-      />
+      <>
+        <SessionComplete
+          deckId={deckId}
+          totalCards={totalCards}
+          xpGained={totalXp}
+          streak={streak}
+          ratingDistribution={ratingDistribution}
+          onRestart={restart}
+        />
+        {showLevelUp && (
+          <LevelUpOverlay
+            newLevel={newLevel}
+            onDismiss={() => setShowLevelUp(false)}
+          />
+        )}
+      </>
     );
   }
 
@@ -162,8 +183,8 @@ export default function StudyPage() {
         </div>
       </main>
 
-      {/* ── Feedback overlay ── */}
-      <FeedbackOverlay feedback={feedback} />
+      {/* ── Feedback overlay (avec +XP) ── */}
+      <FeedbackOverlay feedback={feedback} xpGained={lastXpGained} />
     </div>
   );
 }
