@@ -60,7 +60,7 @@ export function NewDeckForm() {
   // ── Création du deck ─────────────────────────────────────────────────────────
   const createDeck = useMutation<Deck, Error, CreateDeckPayload>({
     mutationFn: (payload) => api.post<Deck>("/decks", payload),
-    onSuccess: (deck) => router.push(`/dashboard/decks/${deck.id}`),
+    onSuccess: (deck) => router.push(`/decks/${deck.id}`),
   });
 
   // ── Import PDF ───────────────────────────────────────────────────────────────
@@ -119,7 +119,7 @@ export function NewDeckForm() {
       await importURL.mutateAsync({ deckId: deck.id, url: urlValue });
     }
 
-    router.push(`/dashboard/decks/${deck.id}`);
+    router.push(`/decks/${deck.id}`);
   }
 
   // ─── Drag & drop PDF ─────────────────────────────────────────────────────────

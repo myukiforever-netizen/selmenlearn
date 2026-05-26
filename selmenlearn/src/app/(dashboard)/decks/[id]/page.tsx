@@ -62,7 +62,7 @@ export default function DeckDetailPage() {
     return (
       <div className="max-w-4xl mx-auto py-20 text-center space-y-4">
         <p className="text-slate-500">Deck introuvable ou accès refusé.</p>
-        <Link href="/dashboard/decks" className="text-brand-500 hover:underline text-sm">
+        <Link href="/decks" className="text-brand-500 hover:underline text-sm">
           ← Retour aux decks
         </Link>
       </div>
@@ -80,7 +80,7 @@ export default function DeckDetailPage() {
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
           <Link
-            href="/dashboard/decks"
+            href="/decks"
             className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100
                        dark:hover:text-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
           >

@@ -39,7 +39,7 @@ export default function DecksPage() {
           </p>
         </div>
         <Link
-          href="/dashboard/decks/new"
+          href="/decks/new"
           className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600
                      text-white px-4 py-2.5 rounded-xl font-medium text-sm
                      transition-all hover:-translate-y-0.5 shadow-sm"

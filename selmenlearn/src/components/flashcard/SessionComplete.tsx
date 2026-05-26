@@ -161,7 +161,7 @@ export function SessionComplete({
         className="flex flex-col sm:flex-row gap-3 w-full max-w-xs"
       >
         <Link
-          href={`/dashboard/decks/${deckId}`}
+          href={`/decks/${deckId}`}
           className="flex items-center justify-center gap-2 py-3 px-5 rounded-xl
                      border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400
                      font-medium text-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"

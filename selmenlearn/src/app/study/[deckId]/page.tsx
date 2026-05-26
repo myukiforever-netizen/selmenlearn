@@ -120,7 +120,7 @@ export default function StudyPage() {
           </p>
         </div>
         <Link
-          href={`/dashboard/decks/${deckId}`}
+          href={`/decks/${deckId}`}
           className="flex items-center gap-2 text-brand-500 hover:text-brand-600 font-medium"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -160,7 +160,7 @@ export default function StudyPage() {
       {/* ── Header ── */}
       <header className="flex items-center gap-3 px-4 pt-4 pb-3 max-w-xl mx-auto w-full">
         <Link
-          href={`/dashboard/decks/${deckId}`}
+          href={`/decks/${deckId}`}
           className="p-2 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200
                      hover:bg-white dark:hover:bg-slate-800 transition-colors shrink-0"
           title="Quitter la session"

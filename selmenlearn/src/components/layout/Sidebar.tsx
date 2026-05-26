@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Brain, BookOpen, BarChart2, Settings, Trophy } from "lucide-react";
+import { Brain, BookOpen, BarChart2, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/dashboard/decks",  label: "Mes Decks",   icon: BookOpen },
-  { href: "/dashboard/stats",  label: "Statistiques", icon: BarChart2 },
-  { href: "/dashboard/achievements", label: "Badges", icon: Trophy },
-  { href: "/dashboard/settings", label: "Paramètres", icon: Settings },
+  { href: "/decks",        label: "Mes Decks",    icon: BookOpen  },
+  { href: "/stats",        label: "Statistiques", icon: BarChart2 },
+  { href: "/achievements", label: "Badges",       icon: Trophy    },
 ];
 
 export function Sidebar() {

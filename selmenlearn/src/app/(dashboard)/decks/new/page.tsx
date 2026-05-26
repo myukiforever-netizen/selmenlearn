@@ -9,7 +9,7 @@ export default function NewDeckPage() {
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
         <Link
-          href="/dashboard/decks"
+          href="/decks"
           className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100
                      dark:hover:text-slate-100 dark:hover:bg-slate-800 transition-colors"
         >

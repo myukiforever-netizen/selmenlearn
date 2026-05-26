@@ -24,7 +24,7 @@ export function DeckCard({ deck }: DeckCardProps) {
   return (
     <Card hover className="h-full flex flex-col group">
       {/* ── Header — clickable to detail ── */}
-      <Link href={`/dashboard/decks/${deck.id}`} className="flex-1 flex flex-col">
+      <Link href={`/decks/${deck.id}`} className="flex-1 flex flex-col">
         <CardHeader>
           <div className="flex items-start justify-between gap-2">
             <h3 className="font-semibold text-slate-900 dark:text-slate-50 line-clamp-2 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
