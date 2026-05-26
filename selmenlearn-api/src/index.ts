@@ -16,6 +16,7 @@ import decksRouter  from "./routes/decks.js";
 import cardsRouter  from "./routes/cards.js";
 import importsRouter from "./routes/imports.js";
 import quizRouter   from "./routes/quiz.js";
+import seedRouter   from "./routes/seed.js";
 
 // Start BullMQ worker
 import "./jobs/cardGenerationQueue.js";
@@ -47,6 +48,7 @@ app.route("/decks",   decksRouter);
 app.route("/decks",   quizRouter);    // GET/POST /decks/:id/quiz
 app.route("/decks",   importsRouter); // POST /decks/:id/import/*
 app.route("/",        cardsRouter);   // /decks/:id/due  +  /cards/:id/review  +  /sessions
+app.route("/seed",    seedRouter);    // GET /seed/tiktok — one-shot deck seed
 
 // 404
 app.notFound((c) => c.json({ message: "Not found" }, 404));

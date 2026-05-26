@@ -9,6 +9,6 @@ export function useAchievements() {
   return useQuery({
     queryKey: ["achievements"],
     queryFn:  () => api.get<Badge[]>("/users/me/achievements"),
-    staleTime: 30_000,
+    staleTime: 10 * 60_000,
   });
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ReactQueryProvider } from "@/components/providers/ReactQueryProvider";
+import { ApiWarmup } from "@/components/providers/ApiWarmup";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,7 +16,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr" suppressHydrationWarning>
       <body>
-        <ReactQueryProvider>{children}</ReactQueryProvider>
+        <ReactQueryProvider>
+          <ApiWarmup />
+          {children}
+        </ReactQueryProvider>
       </body>
     </html>
   );

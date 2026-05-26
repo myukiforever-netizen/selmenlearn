@@ -10,7 +10,6 @@ export function useActivity() {
   return useQuery({
     queryKey:  ["user-activity"],
     queryFn:   () => api.get<ActivityDay[]>("/users/me/activity"),
-    staleTime: 60_000,
-    refetchOnWindowFocus: true,
+    staleTime: 5 * 60_000,
   });
 }

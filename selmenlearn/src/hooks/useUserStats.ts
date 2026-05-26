@@ -13,8 +13,7 @@ export function useUserStats() {
   const query = useQuery({
     queryKey:        ["user-stats"],
     queryFn:         () => api.get<UserStats>("/users/me/stats"),
-    staleTime:       60_000,  // consider fresh for 1 min
-    refetchOnWindowFocus: true,
+    staleTime: 3 * 60_000, // 3 min
   });
 
   // Sync stats into the Zustand store so Header badges stay in sync
