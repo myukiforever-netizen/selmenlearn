@@ -114,6 +114,98 @@ Format JSON requis :
   );
 }
 
+// ─── Génération de quiz ───────────────────────────────────────────────────────
+
+export interface QuizQuestion {
+  id:          string;
+  type:        "mcq" | "true_false";
+  question:    string;
+  options:     { text: string; isCorrect: boolean }[];
+  explanation: string;
+}
+
+const QUIZ_SYSTEM_PROMPT = `Tu es un expert en pédagogie. Tu génères des questions de quiz à partir de flashcards pour tester la compréhension en profondeur.
+Règles absolues :
+- Varie les types : environ 65% QCM ("mcq"), 35% vrai/faux ("true_false")
+- Pour QCM : exactement 4 options, 1 seule correcte, 3 distracteurs plausibles et de longueur similaire
+- Pour vrai/faux : affirmation directe (pas une question), exactement 2 options dans cet ordre : [{"text":"Vrai","isCorrect":true_ou_false},{"text":"Faux","isCorrect":true_ou_false}]
+- Reformule la question — ne copie pas le recto mot pour mot
+- L'explication est courte (1 phrase max), en français
+- Réponds UNIQUEMENT avec du JSON valide, aucun texte avant ou après`;
+
+export async function generateQuiz(
+  cards:    { front: string; back: string }[],
+  subject?: string
+): Promise<QuizQuestion[]> {
+  const subjectCtx = subject ? ` (sujet : ${subject})` : "";
+
+  const cardsText = cards
+    .map((c, i) => `Carte ${i + 1} — Question: "${c.front}" | Réponse: "${c.back}"`)
+    .join("\n");
+
+  const message = await claude.messages.create({
+    model:      "claude-sonnet-4-6",
+    max_tokens: 4096,
+    system: [
+      {
+        type:          "text",
+        text:          QUIZ_SYSTEM_PROMPT,
+        cache_control: { type: "ephemeral" },
+      } as Anthropic.TextBlockParam & { cache_control: { type: "ephemeral" } },
+    ],
+    messages: [
+      {
+        role:    "user",
+        content: `Génère 1 question de quiz par flashcard${subjectCtx}.
+
+Flashcards :
+${cardsText}
+
+Format JSON requis (1 objet par carte) :
+[
+  {
+    "id": "q1",
+    "type": "mcq",
+    "question": "Question reformulée ?",
+    "options": [
+      { "text": "Bonne réponse", "isCorrect": true },
+      { "text": "Distractor 1",  "isCorrect": false },
+      { "text": "Distractor 2",  "isCorrect": false },
+      { "text": "Distractor 3",  "isCorrect": false }
+    ],
+    "explanation": "Courte explication de la bonne réponse."
+  }
+]`,
+      },
+    ],
+  });
+
+  const content = message.content[0];
+  if (content.type !== "text") throw new Error("Unexpected Claude response type");
+
+  const jsonMatch = content.text.match(/\[[\s\S]*\]/);
+  if (!jsonMatch) throw new Error("No JSON array found in Claude response");
+
+  const raw = JSON.parse(jsonMatch[0]) as QuizQuestion[];
+
+  return raw
+    .filter((q) => q.question && q.options?.length >= 2)
+    .map((q, i) => ({
+      ...q,
+      id:      `q${i + 1}`,
+      options: q.type === "mcq" ? shuffleArray(q.options) : q.options,
+    }));
+}
+
+function shuffleArray<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 // ─── Découpage du texte en chunks ─────────────────────────────────────────────
 
 export function splitIntoChunks(text: string, maxTokens: number): string[] {

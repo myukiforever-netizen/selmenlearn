@@ -132,3 +132,30 @@ export interface ActivityDay {
   cardsStudied: number;
   sessions:     number;
 }
+
+// ─── Quiz ─────────────────────────────────────────────────────────────────────
+
+export interface QuizOption {
+  text:      string;
+  isCorrect: boolean;
+}
+
+export interface QuizQuestion {
+  id:          string;
+  type:        "mcq" | "true_false";
+  question:    string;
+  options:     QuizOption[];
+  explanation: string;
+}
+
+export interface QuizSessionResult {
+  questionId:  string;
+  selectedIdx: number;
+  isCorrect:   boolean;
+}
+
+export interface QuizSubmitResponse {
+  xpGained: number;
+  streak:   number;
+  level:    number;
+}

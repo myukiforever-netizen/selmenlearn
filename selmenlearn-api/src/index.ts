@@ -15,6 +15,7 @@ import usersRouter  from "./routes/users.js";
 import decksRouter  from "./routes/decks.js";
 import cardsRouter  from "./routes/cards.js";
 import importsRouter from "./routes/imports.js";
+import quizRouter   from "./routes/quiz.js";
 
 // Start BullMQ worker
 import "./jobs/cardGenerationQueue.js";
@@ -43,6 +44,7 @@ app.get("/health", (c) => c.json({ status: "ok", ts: new Date().toISOString() })
 // Routes
 app.route("/users",   usersRouter);
 app.route("/decks",   decksRouter);
+app.route("/decks",   quizRouter);    // GET/POST /decks/:id/quiz
 app.route("/decks",   importsRouter); // POST /decks/:id/import/*
 app.route("/",        cardsRouter);   // /decks/:id/due  +  /cards/:id/review  +  /sessions
 

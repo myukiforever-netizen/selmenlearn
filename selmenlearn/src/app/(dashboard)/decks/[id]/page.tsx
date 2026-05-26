@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import { ArrowLeft, BookOpen, Zap, Clock, RefreshCw, RotateCcw, Settings2 } from "lucide-react";
+import { ArrowLeft, BookOpen, Zap, Clock, RefreshCw, RotateCcw, Settings2, HelpCircle } from "lucide-react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { GenerationProgress } from "@/components/deck/GenerationProgress";
@@ -108,6 +108,17 @@ export default function DeckDetailPage() {
             >
               <Settings2 className="w-5 h-5" />
             </button>
+          )}
+          {totalCards >= 2 && (
+            <Link
+              href={`/quiz/${deckId}`}
+              className="inline-flex items-center gap-2 border border-brand-300 dark:border-brand-700
+                         text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/30
+                         px-4 py-2.5 rounded-xl font-medium text-sm transition-all"
+            >
+              <HelpCircle className="w-4 h-4" />
+              Quiz
+            </Link>
           )}
           {dueCards > 0 && (
             <Link
