@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { prisma } from "../lib/prisma.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { getLevelProgress } from "../services/level.js";
+import { BADGES } from "../services/badges.js";
 
 const users = new Hono<{ Variables: { userId: string } }>();
 
@@ -14,14 +15,15 @@ users.get("/me", async (c) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
-      id:        true,
-      email:     true,
-      name:      true,
-      xp:        true,
-      level:     true,
-      streak:    true,
-      lastStudy: true,
-      createdAt: true,
+      id:            true,
+      email:         true,
+      name:          true,
+      xp:            true,
+      level:         true,
+      streak:        true,
+      streakFreezes: true,
+      lastStudy:     true,
+      createdAt:     true,
       _count: { select: { decks: true, sessions: true, achievements: true } },
     },
   });
@@ -39,7 +41,7 @@ users.get("/me/stats", async (c) => {
   const [user, totalCards, dueCards, masteredCards] = await Promise.all([
     prisma.user.findUnique({
       where:  { id: userId },
-      select: { xp: true, level: true, streak: true },
+      select: { xp: true, level: true, streak: true, streakFreezes: true },
     }),
     prisma.card.count({ where: { deck: { userId } } }),
     prisma.cardReview.count({ where: { userId, nextReview: { lte: new Date() } } }),
@@ -53,7 +55,6 @@ users.get("/me/stats", async (c) => {
 });
 
 // ─── GET /users/me/activity ────────────────────────────────────────────────────
-// Returns daily activity for the last 30 days (for heatmap / streak display).
 
 users.get("/me/activity", async (c) => {
   const userId = c.get("userId");
@@ -71,7 +72,6 @@ users.get("/me/activity", async (c) => {
     select: { startedAt: true, xpGained: true, cardsStudied: true },
   });
 
-  // Aggregate by calendar day (YYYY-MM-DD)
   const dayMap = new Map<string, { xp: number; cardsStudied: number; sessions: number }>();
 
   for (const s of sessions) {
@@ -89,6 +89,27 @@ users.get("/me/activity", async (c) => {
     .sort((a, b) => a.date.localeCompare(b.date));
 
   return c.json(activity);
+});
+
+// ─── GET /users/me/achievements ────────────────────────────────────────────────
+
+users.get("/me/achievements", async (c) => {
+  const userId = c.get("userId");
+
+  const unlocked = await prisma.achievement.findMany({
+    where:  { userId },
+    select: { badgeId: true, unlockedAt: true },
+  });
+
+  const unlockedMap = new Map(unlocked.map((a) => [a.badgeId, a.unlockedAt]));
+
+  const badges = BADGES.map((badge) => ({
+    ...badge,
+    unlocked:   unlockedMap.has(badge.id),
+    unlockedAt: unlockedMap.get(badge.id)?.toISOString() ?? null,
+  }));
+
+  return c.json(badges);
 });
 
 export default users;

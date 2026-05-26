@@ -11,6 +11,7 @@ import {
   invalidateDueCount,
   getDueCardIdsForDeck,
 } from "../services/scheduling.js";
+import { checkAndAwardBadges } from "../services/badges.js";
 
 const cards = new Hono<{ Variables: { userId: string } }>();
 
@@ -119,7 +120,6 @@ cards.post(
     const xpGained = rating === 3 ? 15 : rating >= 1 ? 10 : 0;
 
     // Update XP + recalculate level
-    let newStreak = 0;
     let newLevel  = 1;
     let prevLevel = 1;
 
@@ -147,22 +147,25 @@ cards.post(
     }
 
     // Update streak
-    newStreak = await updateStreak(userId);
+    const streakResult = await updateStreak(userId);
 
     // Redis: update schedule + invalidate due-count cache (fire-and-forget)
     Promise.all([
       scheduleCard(userId, cardId, card.deckId, result.nextReview),
       invalidateDueCount(userId, card.deckId),
+      checkAndAwardBadges(userId),
     ]).catch(() => {});
 
     return c.json({
-      nextReview: result.nextReview,
-      interval:   result.interval,
+      nextReview:    result.nextReview,
+      interval:      result.interval,
       xpGained,
-      streak:     newStreak,
-      level:      newLevel,
+      streak:        streakResult.streak,
+      streakFreezes: streakResult.streakFreezes,
+      freezeUsed:    streakResult.freezeUsed,
+      level:         newLevel,
       prevLevel,
-      leveledUp:  newLevel > prevLevel,
+      leveledUp:     newLevel > prevLevel,
     });
   }
 );

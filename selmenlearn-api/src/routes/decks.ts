@@ -5,6 +5,7 @@ import { prisma } from "../lib/prisma.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { cardGenerationQueue } from "../jobs/cardGenerationQueue.js";
 import { getCachedDueCount, setCachedDueCount } from "../services/scheduling.js";
+import { checkAndAwardBadges } from "../services/badges.js";
 
 const decks = new Hono<{ Variables: { userId: string } }>();
 
@@ -90,6 +91,9 @@ decks.post("/", zValidator("json", createDeckSchema), async (c) => {
       subject,
     });
   }
+
+  // Fire-and-forget badge check (deck_first, deck_3, deck_10)
+  checkAndAwardBadges(userId).catch(() => {});
 
   return c.json(deck, 201);
 });

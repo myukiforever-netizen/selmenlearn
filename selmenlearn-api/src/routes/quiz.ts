@@ -6,6 +6,7 @@ import { authMiddleware } from "../middleware/auth.js";
 import { generateQuiz } from "../services/ai.js";
 import { updateStreak } from "../services/streak.js";
 import { xpToLevel } from "../services/level.js";
+import { checkAndAwardBadges } from "../services/badges.js";
 
 const quiz = new Hono<{ Variables: { userId: string } }>();
 
@@ -104,9 +105,20 @@ quiz.post(
       newLevel  = prevLevel;
     }
 
-    const newStreak = await updateStreak(userId);
+    const streakResult = await updateStreak(userId);
 
-    return c.json({ xpGained, streak: newStreak, level: newLevel, prevLevel, leveledUp: newLevel > prevLevel });
+    // Fire-and-forget badge check
+    checkAndAwardBadges(userId).catch(() => {});
+
+    return c.json({
+      xpGained,
+      streak:        streakResult.streak,
+      streakFreezes: streakResult.streakFreezes,
+      freezeUsed:    streakResult.freezeUsed,
+      level:         newLevel,
+      prevLevel,
+      leveledUp:     newLevel > prevLevel,
+    });
   }
 );
 

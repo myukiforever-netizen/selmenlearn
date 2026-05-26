@@ -96,13 +96,15 @@ export interface DueCard {
 }
 
 export interface ReviewResponse {
-  nextReview: string;
-  interval:   number;
-  xpGained:   number;
-  streak:     number;
-  level:      number;
-  prevLevel:  number;
-  leveledUp:  boolean;
+  nextReview:    string;
+  interval:      number;
+  xpGained:      number;
+  streak:        number;
+  streakFreezes: number;
+  freezeUsed:    boolean;
+  level:         number;
+  prevLevel:     number;
+  leveledUp:     boolean;
 }
 
 export interface RatingDistribution {
@@ -123,6 +125,7 @@ export interface UserStats {
   xp:            number;
   level:         number;
   streak:        number;
+  streakFreezes: number;
   totalCards:    number;
   dueCards:      number;
   masteredCards: number;
@@ -158,9 +161,24 @@ export interface QuizSessionResult {
 }
 
 export interface QuizSubmitResponse {
-  xpGained:  number;
-  streak:    number;
-  level:     number;
-  prevLevel: number;
-  leveledUp: boolean;
+  xpGained:      number;
+  streak:        number;
+  streakFreezes: number;
+  freezeUsed:    boolean;
+  level:         number;
+  prevLevel:     number;
+  leveledUp:     boolean;
+}
+
+// ─── Achievements / Badges ───────────────────────────────────────────────────
+
+export interface Badge {
+  id:          string;
+  name:        string;
+  description: string;
+  emoji:       string;
+  category:    "streak" | "cards" | "level" | "quiz" | "deck";
+  rarity:      "common" | "rare" | "epic" | "legendary";
+  unlocked:    boolean;
+  unlockedAt:  string | null;
 }

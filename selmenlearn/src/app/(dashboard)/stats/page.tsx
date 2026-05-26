@@ -50,7 +50,7 @@ export default function StatsPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.05 }}
             >
-              <StreakCard streak={stats.streak} data={activity} />
+              <StreakCard streak={stats.streak} streakFreezes={stats.streakFreezes ?? 0} data={activity} />
             </motion.div>
           </>
         )}

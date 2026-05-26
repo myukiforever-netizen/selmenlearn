@@ -1,12 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Flame, CheckCircle2 } from "lucide-react";
+import { Flame, CheckCircle2, Shield } from "lucide-react";
 import type { ActivityDay } from "@/types";
 
 interface StreakCardProps {
-  streak: number;
-  data:   ActivityDay[];
+  streak:        number;
+  streakFreezes: number;
+  data:          ActivityDay[];
 }
 
 const MILESTONE_DAYS = [3, 7, 14, 30, 100] as const;
@@ -35,13 +36,12 @@ function toYMD(date: Date): string {
 
 const DAY_SHORT = ["D", "L", "M", "M", "J", "V", "S"] as const;
 
-export function StreakCard({ streak, data }: StreakCardProps) {
+export function StreakCard({ streak, streakFreezes, data }: StreakCardProps) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   const studiedDates = new Set(data.filter(d => d.cardsStudied > 0).map(d => d.date));
 
-  // Last 7 days: index 0 = 6 days ago, index 6 = today
   const last7 = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(today);
     d.setDate(today.getDate() - (6 - i));
@@ -53,11 +53,27 @@ export function StreakCard({ streak, data }: StreakCardProps) {
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
       {/* Header */}
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-7 h-7 rounded-lg bg-orange-100 dark:bg-orange-950/50 flex items-center justify-center">
-          <Flame className={`w-4 h-4 text-orange-500 ${streak > 0 ? "animate-streak-pulse" : ""}`} />
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-orange-100 dark:bg-orange-950/50 flex items-center justify-center">
+            <Flame className={`w-4 h-4 text-orange-500 ${streak > 0 ? "animate-streak-pulse" : ""}`} />
+          </div>
+          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Série de révisions</h2>
         </div>
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Série de révisions</h2>
+
+        {/* Freeze shields */}
+        <div className="flex items-center gap-1" title={`${streakFreezes} freeze${streakFreezes > 1 ? "s" : ""} disponible${streakFreezes > 1 ? "s" : ""}`}>
+          {Array.from({ length: 3 }, (_, i) => (
+            <Shield
+              key={i}
+              className={`w-4 h-4 transition-colors ${
+                i < streakFreezes
+                  ? "text-sky-400 fill-sky-400/20"
+                  : "text-slate-200 dark:text-slate-700"
+              }`}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Big streak number */}
@@ -112,6 +128,14 @@ export function StreakCard({ streak, data }: StreakCardProps) {
           );
         })}
       </div>
+
+      {/* Freeze info */}
+      <p className="text-[10px] text-sky-500 dark:text-sky-400 mb-1 flex items-center gap-1">
+        <Shield className="w-3 h-3" />
+        {streakFreezes === 0
+          ? "Aucun freeze disponible — revient lundi !"
+          : `${streakFreezes} freeze${streakFreezes > 1 ? "s" : ""} disponible${streakFreezes > 1 ? "s" : ""} (renouvelé chaque semaine)`}
+      </p>
 
       {/* Motivational message */}
       <p className="text-xs text-slate-400 mb-3">{getMotivationalMessage(streak)}</p>

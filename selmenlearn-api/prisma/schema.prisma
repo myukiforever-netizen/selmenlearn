@@ -9,16 +9,18 @@ datasource db {
 }
 
 model User {
-  id          String    @id @default(cuid())
-  clerkId     String    @unique
-  email       String    @unique
-  name        String?
-  xp          Int       @default(0)
-  level       Int       @default(1)
-  streak      Int       @default(0)
-  lastStudy   DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id               String    @id @default(cuid())
+  clerkId          String    @unique
+  email            String    @unique
+  name             String?
+  xp               Int       @default(0)
+  level            Int       @default(1)
+  streak           Int       @default(0)
+  lastStudy        DateTime?
+  streakFreezes    Int       @default(1)
+  lastFreezeWeek   Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   decks        Deck[]
   cardReviews  CardReview[]
