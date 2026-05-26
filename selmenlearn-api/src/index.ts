@@ -1,5 +1,4 @@
 import "dotenv/config";
-import { exec } from "child_process";
 
 // Prevent unhandled Redis/BullMQ rejections from crashing the process
 process.on("unhandledRejection", (reason) => {
@@ -61,12 +60,4 @@ const PORT = parseInt(process.env.PORT ?? "4000", 10);
 serve({ fetch: app.fetch, port: PORT }, () => {
   console.log(`\n🚀 SelmenLearn API running on http://localhost:${PORT}`);
   console.log(`   Environment: ${process.env.NODE_ENV ?? "development"}\n`);
-
-  // Push DB schema in background — non-blocking so health check passes immediately
-  if (process.env.NODE_ENV === "production") {
-    exec("npx prisma db push --skip-generate", (err, stdout, stderr) => {
-      if (err) console.error("[Prisma] db push failed:", err.message);
-      else console.log("[Prisma] db push done:", stdout.trim() || stderr.trim());
-    });
-  }
 });

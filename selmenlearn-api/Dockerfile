@@ -25,5 +25,5 @@ COPY --from=builder /app/package.json ./
 
 EXPOSE 4000
 
-# Sync DB schema then start — prisma db push is idempotent (safe at every startup)
-CMD ["node", "dist/index.js"]
+# Apply schema first (idempotent), then start server
+CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/index.js"]
