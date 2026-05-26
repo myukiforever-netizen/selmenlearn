@@ -9,7 +9,17 @@ import { QuizQuestion } from "@/components/quiz/QuizQuestion";
 import { QuizProgress } from "@/components/quiz/QuizProgress";
 import { QuizComplete } from "@/components/quiz/QuizComplete";
 import { LevelUpOverlay } from "@/components/xp/LevelUpOverlay";
+import { LumiWidget } from "@/components/lumi/LumiWidget";
 import { useQuizSession } from "@/hooks/useQuizSession";
+import { useLumiStore } from "@/stores/useLumiStore";
+
+// ─── Lumi messages ────────────────────────────────────────────────────────────
+
+const LUMI_CORRECT  = ["Super ! 🌟", "Bonne réponse !", "Tu sais ça ! ✨", "Excellent !"];
+const LUMI_WRONG    = ["Pas de panique !", "On apprend de ses erreurs !", "Tu y arriveras !", "Continue !"];
+const LUMI_END      = ["Quiz terminé ! 🎉", "Belle performance !", "Bien joué !", "Tu progresses !"];
+
+function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
 
 // ─── Page principale ──────────────────────────────────────────────────────────
 
@@ -37,12 +47,38 @@ export default function QuizPage() {
 
   const [showLevelUp, setShowLevelUp] = useState(false);
 
+  const setLumiMood = useLumiStore((s) => s.setMood);
+
   // Déclencher l'overlay level-up quand le quiz est terminé avec un passage de niveau
   useEffect(() => {
     if (status === "complete" && leveledUp) {
       setShowLevelUp(true);
     }
   }, [status, leveledUp]);
+
+  // Lumi réagit aux réponses du quiz
+  useEffect(() => {
+    if (!isAnswered || selectedIdx === null || !currentQuestion) return;
+    const correct = currentQuestion.options[selectedIdx]?.isCorrect ?? false;
+    setLumiMood(correct ? "happy" : "sad", correct ? pick(LUMI_CORRECT) : pick(LUMI_WRONG));
+  }, [isAnswered]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Lumi réagit à la fin du quiz
+  useEffect(() => {
+    if (status !== "complete") return;
+    const perfect = score === totalQuestions && totalQuestions > 0;
+    if (perfect) {
+      setLumiMood("excited", "Score parfait ! 🌠 Incroyable !");
+    } else {
+      setLumiMood("happy", pick(LUMI_END));
+    }
+  }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Si level-up arrive (réponse API asynchrone) — override
+  useEffect(() => {
+    if (!leveledUp || status !== "complete") return;
+    setLumiMood("proud", `Niveau ${newLevel} atteint ! 🎉`);
+  }, [leveledUp, newLevel, status, setLumiMood]);
 
   // Raccourci clavier : Entrée pour passer à la question suivante
   useEffect(() => {
@@ -129,6 +165,7 @@ export default function QuizPage() {
             onDismiss={() => setShowLevelUp(false)}
           />
         )}
+        <LumiWidget />
       </>
     );
   }
@@ -191,6 +228,9 @@ export default function QuizPage() {
           </p>
         )}
       </main>
+
+      {/* ── Mascotte Lumi ── */}
+      <LumiWidget />
     </div>
   );
 }

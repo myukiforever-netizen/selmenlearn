@@ -7,6 +7,7 @@ import { useActivity } from "@/hooks/useActivity";
 import { ActivityHeatmap } from "@/components/stats/ActivityHeatmap";
 import { StreakCard } from "@/components/stats/StreakCard";
 import { LevelCard } from "@/components/stats/LevelCard";
+import { LumiDashboard } from "@/components/lumi/LumiDashboard";
 
 export default function StatsPage() {
   const { data: stats,    isLoading: statsLoading    } = useUserStats();
@@ -55,6 +56,17 @@ export default function StatsPage() {
           </>
         )}
       </div>
+
+      {/* ── Lumi greeting ── */}
+      {!isLoading && stats && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.08 }}
+        >
+          <LumiDashboard streak={stats.streak} />
+        </motion.div>
+      )}
 
       {/* ── Activity heatmap ── */}
       <motion.div

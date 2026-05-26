@@ -11,7 +11,17 @@ import { SessionProgress } from "@/components/flashcard/SessionProgress";
 import { FeedbackOverlay } from "@/components/flashcard/FeedbackOverlay";
 import { SessionComplete } from "@/components/flashcard/SessionComplete";
 import { LevelUpOverlay } from "@/components/xp/LevelUpOverlay";
+import { LumiWidget } from "@/components/lumi/LumiWidget";
 import { useStudySession } from "@/hooks/useStudySession";
+import { useLumiStore } from "@/stores/useLumiStore";
+
+// ─── Lumi messages ────────────────────────────────────────────────────────────
+
+const LUMI_CORRECT  = ["Super ! 🌟", "Bien joué !", "Tu maîtrises ça !", "C'est ça ! ✨", "Excellent !"];
+const LUMI_WRONG    = ["Pas de panique !", "Tu y arriveras !", "L'erreur fait partie de l'apprentissage !", "Essaie encore !"];
+const LUMI_END      = ["Belle session ! 🎉", "Du beau travail !", "Tu progresses vite !", "Bravo pour cette séance !"];
+
+function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
 
 // ─── Page de session ──────────────────────────────────────────────────────────
 
@@ -41,12 +51,33 @@ export default function StudyPage() {
 
   const [showLevelUp, setShowLevelUp] = useState(false);
 
+  const setLumiMood = useLumiStore((s) => s.setMood);
+
   // Déclencher l'overlay level-up quand la session se termine avec un passage de niveau
   useEffect(() => {
     if (status === "complete" && leveledUp) {
       setShowLevelUp(true);
     }
   }, [status, leveledUp]);
+
+  // Lumi réagit aux réponses
+  useEffect(() => {
+    if (feedback === "correct") {
+      setLumiMood("happy", pick(LUMI_CORRECT));
+    } else if (feedback === "incorrect") {
+      setLumiMood("sad", pick(LUMI_WRONG));
+    }
+  }, [feedback, setLumiMood]);
+
+  // Lumi réagit à la fin de session
+  useEffect(() => {
+    if (status !== "complete") return;
+    if (leveledUp) {
+      setLumiMood("proud", `Niveau ${newLevel} atteint ! 🎉`);
+    } else {
+      setLumiMood("happy", pick(LUMI_END));
+    }
+  }, [status, leveledUp, newLevel, setLumiMood]);
 
   // ── Raccourcis clavier ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -116,6 +147,7 @@ export default function StudyPage() {
             onDismiss={() => setShowLevelUp(false)}
           />
         )}
+        <LumiWidget />
       </>
     );
   }
@@ -185,6 +217,9 @@ export default function StudyPage() {
 
       {/* ── Feedback overlay (avec +XP) ── */}
       <FeedbackOverlay feedback={feedback} xpGained={lastXpGained} />
+
+      {/* ── Mascotte Lumi ── */}
+      <LumiWidget />
     </div>
   );
 }
