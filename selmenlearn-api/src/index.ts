@@ -1,4 +1,10 @@
 import "dotenv/config";
+
+// Prevent unhandled Redis/BullMQ rejections from crashing the process
+process.on("unhandledRejection", (reason) => {
+  console.error("[App] Unhandled rejection:", reason);
+});
+
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
