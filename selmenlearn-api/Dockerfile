@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:20-slim AS base
 WORKDIR /app
 
 # Install dependencies
@@ -12,11 +12,11 @@ COPY . .
 RUN npx prisma generate
 RUN npm run build
 
-# Production runner
-FROM base AS runner
+# Production runner (Debian slim — no Alpine musl/OpenSSL mismatch)
+FROM node:20-slim AS runner
+WORKDIR /app
 ENV NODE_ENV=production
-# openssl required by Prisma migration engine on Alpine
-RUN apk add --no-cache openssl
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/dist         ./dist
 COPY --from=builder /app/node_modules ./node_modules
@@ -25,5 +25,4 @@ COPY --from=builder /app/package.json ./
 
 EXPOSE 4000
 
-# 1. Apply schema (idempotent), 2. Seed TikTok decks (idempotent), 3. Start server
 CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/index.js"]
