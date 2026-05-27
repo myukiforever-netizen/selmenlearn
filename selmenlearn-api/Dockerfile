@@ -25,4 +25,4 @@ COPY --from=builder /app/package.json ./
 
 EXPOSE 4000
 
-CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/index.js 2>&1 || (echo \"=== NODE CRASHED exit=$? ===\"; exit 1)"]
+CMD ["sh", "-c", "echo \"=== STARTING: PORT=$PORT NODE_ENV=$NODE_ENV ===\"; npx prisma db push --skip-generate && node dist/index.js 2>&1 || (echo \"=== NODE CRASHED exit=$? ===\"; exit 1)"]
