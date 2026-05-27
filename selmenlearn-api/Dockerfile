@@ -25,5 +25,5 @@ COPY --from=builder /app/package.json ./
 
 EXPOSE 4000
 
-# Apply schema first (idempotent), then start server
-CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/index.js"]
+# 1. Apply schema (idempotent), 2. Seed TikTok decks (idempotent), 3. Start server
+CMD ["sh", "-c", "npx prisma db push --skip-generate && npx tsx prisma/seed-tiktok.ts && node dist/index.js"]
