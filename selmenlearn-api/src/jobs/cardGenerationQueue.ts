@@ -3,6 +3,8 @@ import { redis } from "../lib/redis.js";
 import { prisma } from "../lib/prisma.js";
 import { generateFlashcards, splitIntoChunks, GenerationOptions } from "../services/ai.js";
 
+if (!redis) throw new Error("BullMQ requires REDIS_URL — do not import this module when Redis is unavailable");
+
 export const cardGenerationQueue = new Queue("card-generation", {
   connection: redis,
   defaultJobOptions: {

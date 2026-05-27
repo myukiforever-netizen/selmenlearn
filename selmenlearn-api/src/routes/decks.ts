@@ -3,7 +3,8 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { authMiddleware } from "../middleware/auth.js";
-import { cardGenerationQueue } from "../jobs/cardGenerationQueue.js";
+import { redis } from "../lib/redis.js";
+const getQueue = async () => redis ? (await import("../jobs/cardGenerationQueue.js")).cardGenerationQueue : null;
 import { getCachedDueCount, setCachedDueCount } from "../services/scheduling.js";
 import { checkAndAwardBadges } from "../services/badges.js";
 
@@ -84,12 +85,8 @@ decks.post("/", zValidator("json", createDeckSchema), async (c) => {
   });
 
   if (content && content.trim().length > 0) {
-    await cardGenerationQueue.add("generate-cards", {
-      deckId: deck.id,
-      userId,
-      content,
-      subject,
-    });
+    const queue = await getQueue();
+    if (queue) await queue.add("generate-cards", { deckId: deck.id, userId, content, subject });
   }
 
   // Fire-and-forget badge check (deck_first, deck_3, deck_10)
@@ -192,11 +189,10 @@ decks.post("/:id/regenerate", zValidator("json", regenerateSchema), async (c) =>
     },
   });
 
-  await cardGenerationQueue.add(
-    "generate-cards",
-    { deckId, userId, content: deck.sourceContent, subject: deck.subject ?? undefined, options },
-    { priority: 1 }
-  );
+  const queue = await getQueue();
+  if (queue) {
+    await queue.add("generate-cards", { deckId, userId, content: deck.sourceContent, subject: deck.subject ?? undefined, options }, { priority: 1 });
+  }
 
   return c.json({ status: "processing" });
 });

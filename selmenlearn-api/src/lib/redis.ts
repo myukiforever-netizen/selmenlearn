@@ -1,18 +1,19 @@
 import { Redis } from "ioredis";
 
-if (!process.env.REDIS_URL) {
-  throw new Error("REDIS_URL is not defined");
-}
-
-export const redis = new Redis(process.env.REDIS_URL, {
-  maxRetriesPerRequest: null, // Required by BullMQ
-  enableReadyCheck: false,
-});
-
-redis.on("error", (err) => {
-  console.error("[Redis] Connection error:", err.message);
-});
-
-redis.on("connect", () => {
-  console.log("[Redis] Connected");
-});
+// Redis is optional — when REDIS_URL is absent, queue jobs are no-ops
+export const redis: Redis | null = process.env.REDIS_URL
+  ? (() => {
+      const client = new Redis(process.env.REDIS_URL!, {
+        maxRetriesPerRequest: null,
+        enableReadyCheck: false,
+        lazyConnect: true,
+      });
+      client.on("error", (err) => {
+        console.error("[Redis] Connection error:", err.message);
+      });
+      client.on("connect", () => {
+        console.log("[Redis] Connected");
+      });
+      return client;
+    })()
+  : null;

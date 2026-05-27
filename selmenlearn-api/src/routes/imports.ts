@@ -3,7 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { authMiddleware } from "../middleware/auth.js";
-import { cardGenerationQueue } from "../jobs/cardGenerationQueue.js";
+import { redis } from "../lib/redis.js";
 import { ingestText, ingestPDF, ingestURL } from "../services/ingest.js";
 import type { GenerationOptions } from "../services/ai.js";
 
@@ -50,11 +50,10 @@ async function enqueueGeneration(
     },
   });
 
-  await cardGenerationQueue.add(
-    "generate-cards",
-    { deckId, userId, content: cleanText, subject, options },
-    { priority: 1 }
-  );
+  if (redis) {
+    const { cardGenerationQueue } = await import("../jobs/cardGenerationQueue.js");
+    await cardGenerationQueue.add("generate-cards", { deckId, userId, content: cleanText, subject, options }, { priority: 1 });
+  }
 }
 
 // ─── POST /decks/:id/import/text ──────────────────────────────────────────────
