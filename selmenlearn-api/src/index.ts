@@ -1,3 +1,5 @@
+process.stdout.write("=== NODE STARTED, PORT=" + process.env.PORT + " ===\n");
+
 import "dotenv/config";
 
 // Prevent unhandled Redis/BullMQ rejections from crashing the process
