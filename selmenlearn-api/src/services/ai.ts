@@ -1,10 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-if (!process.env.ANTHROPIC_API_KEY) {
-  throw new Error("ANTHROPIC_API_KEY is not defined");
-}
-
-const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+// Clé optionnelle — sans elle, les jobs de génération IA échouent proprement
+// mais le serveur démarre et toutes les autres routes fonctionnent normalement.
+const claude = process.env.ANTHROPIC_API_KEY
+  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  : null;
 
 export interface GeneratedCard {
   front: string;
@@ -57,6 +57,8 @@ export async function generateFlashcards(
     cardTypePreference === "mixed"
       ? `Varie les types : "definition" (qu'est-ce que X ?), "application" (comment fait-on X ?), "example" (donne un exemple de X), "comparison" (quelle est la différence entre X et Y ?)`
       : `Génère principalement des cartes de type "${cardTypePreference}"`;
+
+  if (!claude) throw new Error("Génération IA désactivée — ANTHROPIC_API_KEY non configurée.");
 
   const message = await claude.messages.create({
     model:      "claude-sonnet-4-6",
@@ -142,6 +144,8 @@ export async function generateQuiz(
   const cardsText = cards
     .map((c, i) => `Carte ${i + 1} — Question: "${c.front}" | Réponse: "${c.back}"`)
     .join("\n");
+
+  if (!claude) throw new Error("Génération IA désactivée — ANTHROPIC_API_KEY non configurée.");
 
   const message = await claude.messages.create({
     model:      "claude-sonnet-4-6",
